@@ -13,7 +13,7 @@ export PAISA_CONFIG="${PAISA_CONFIG:-$DATA_DIR/paisa.yaml}"
 PORT="${PORT:-7500}"
 USER_NAME="${PAISA_USERNAME:-admin}"
 PASSWORD="${PAISA_PASSWORD:-}"
-CHECK_EVERY="${PAISA_LOGIN_CHECK_SECONDS:-3}"
+CHECK_EVERY="${PAISA_LOGIN_CHECK_SECONDS:-2}"
 
 # Go doesn't read the container's CPU limit; Railway hosts report many CPUs.
 export GOMAXPROCS="${GOMAXPROCS:-2}"
@@ -88,11 +88,20 @@ while :; do
   fi
   if [ "$(accounts)" = "0" ]; then
     if [ -n "$HASH" ]; then
-      log "paisa.yaml lost its user accounts (demo data or a config edit); restoring '$USER_NAME' and restarting Paisa"
       set_login || die "could not restore the login account"
-      kill -TERM "$PID" 2>/dev/null || true
-      wait "$PID" 2>/dev/null || true
-      start_paisa
+      # Paisa's in-memory config has no account either, so its config endpoint is open:
+      # hand it the restored config, which applies it at once without a restart.
+      if yq -o=json "$PAISA_CONFIG" > /tmp/paisa-config.json \
+         && wget -q -O /dev/null -T 30 --header "Content-Type: application/json" \
+              --post-file /tmp/paisa-config.json "http://127.0.0.1:$PORT/api/config"; then
+        log "paisa.yaml lost its user accounts (demo data or a config edit); restored '$USER_NAME'"
+      else
+        log "paisa.yaml lost its user accounts; restored '$USER_NAME' and restarting Paisa to apply it"
+        kill -TERM "$PID" 2>/dev/null || true
+        wait "$PID" 2>/dev/null || true
+        start_paisa
+      fi
+      rm -f /tmp/paisa-config.json
     else
       kill -TERM "$PID" 2>/dev/null || true
       die "paisa.yaml has no user account and PAISA_PASSWORD is empty; stopping so the UI isn't open without a login"
