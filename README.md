@@ -27,9 +27,9 @@ Paisa is a single Go binary that serves its web UI and reads your journal with t
 
 ### Implementation Details
 
-**After you deploy:** open the Paisa service's Variables tab and copy `PAISA_PASSWORD` (generated at deploy). Open the public URL and sign in as `admin` with that password. Your data starts empty: write transactions in the Editor, import a bank CSV from the Import page, or click "Load Demo" on the empty dashboard to explore with sample data. Then open Config to set your `default_currency` and `locale` (Paisa defaults to INR and en-IN).
+**After you deploy:** open the Paisa service's Variables tab and copy `PAISA_PASSWORD` (generated at deploy). Open the public URL and sign in as `admin` with that password. Your data starts empty: write transactions in the Editor, import a bank CSV from the Import page, or click "Setup Demo" on the empty dashboard to explore with sample data (it replaces `paisa.yaml` and `main.ledger`, so use it only on a fresh deploy). Then open Config to set your `default_currency` and `locale` (Paisa defaults to INR and en-IN).
 
-**Login:** to change the password or the username, change `PAISA_PASSWORD` or `PAISA_USERNAME` on the service and redeploy. On every start the template writes that account into `paisa.yaml` (stored as Paisa's own SHA-256 hash), and it puts it back if Paisa's "Load Demo" or a config edit removes all user accounts. Other accounts you add in Config stay.
+**Login:** to change the password or the username, change `PAISA_PASSWORD` or `PAISA_USERNAME` on the service and redeploy. On every start the template writes that account into `paisa.yaml` (stored as Paisa's own SHA-256 hash), and it puts it back if Paisa's "Setup Demo" button or a config edit removes all user accounts. Other accounts you add in Config stay.
 
 **Data:** the volume at `/root/Documents/paisa` holds `paisa.yaml`, `main.ledger`, sheets and `paisa.db`, so it survives redeploys and restarts. Back up that folder (or keep your journal in git) if your finances matter to you.
 

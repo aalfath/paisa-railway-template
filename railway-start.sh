@@ -2,7 +2,7 @@
 # Start script for Paisa on Railway.
 # - keeps paisa.yaml, the journal, sheets and the database on the volume
 # - makes sure the UI has a login (PAISA_USERNAME / PAISA_PASSWORD) before it listens,
-#   and puts it back if paisa.yaml loses it while running (Paisa's "load demo" button
+#   and puts it back if paisa.yaml loses it while running (Paisa's "Setup Demo" button
 #   rewrites paisa.yaml without user accounts)
 # - listens on $PORT and caps Go to the service's CPUs and memory
 # An unexpected stop exits non-zero, so Railway's ON_FAILURE restart policy applies.
@@ -91,7 +91,7 @@ while :; do
       set_login || die "could not restore the login account"
       # Hand the restored config to Paisa. If Paisa's in-memory config has no account,
       # its config endpoint is open and applies it at once. A 401 means Paisa is still
-      # protected (for example "Load Demo" is still running) and reads the restored
+      # protected (for example "Setup Demo" is still running) and reads the restored
       # file itself when it reloads. Anything else: restart Paisa to apply it.
       yq -o=json "$PAISA_CONFIG" > /tmp/paisa-config.json
       if OUT="$(wget -q -O /dev/null -T 30 --header "Content-Type: application/json" \
