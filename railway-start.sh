@@ -89,14 +89,18 @@ while :; do
   if [ "$(accounts)" = "0" ]; then
     if [ -n "$HASH" ]; then
       set_login || die "could not restore the login account"
-      # Paisa's in-memory config has no account either, so its config endpoint is open:
-      # hand it the restored config, which applies it at once without a restart.
-      if yq -o=json "$PAISA_CONFIG" > /tmp/paisa-config.json \
-         && wget -q -O /dev/null -T 30 --header "Content-Type: application/json" \
-              --post-file /tmp/paisa-config.json "http://127.0.0.1:$PORT/api/config"; then
+      # Hand the restored config to Paisa. If Paisa's in-memory config has no account,
+      # its config endpoint is open and applies it at once. A 401 means Paisa is still
+      # protected (for example "Load Demo" is still running) and reads the restored
+      # file itself when it reloads. Anything else: restart Paisa to apply it.
+      yq -o=json "$PAISA_CONFIG" > /tmp/paisa-config.json
+      if OUT="$(wget -q -O /dev/null -T 30 --header "Content-Type: application/json" \
+                  --post-file /tmp/paisa-config.json "http://127.0.0.1:$PORT/api/config" 2>&1)"; then
         log "paisa.yaml lost its user accounts (demo data or a config edit); restored '$USER_NAME'"
+      elif echo "$OUT" | grep -q " 401 "; then
+        log "paisa.yaml lost its user accounts while Paisa still has its login; restored '$USER_NAME' in the file"
       else
-        log "paisa.yaml lost its user accounts; restored '$USER_NAME' and restarting Paisa to apply it"
+        log "paisa.yaml lost its user accounts; restored '$USER_NAME' and restarting Paisa to apply it ($OUT)"
         kill -TERM "$PID" 2>/dev/null || true
         wait "$PID" 2>/dev/null || true
         start_paisa
